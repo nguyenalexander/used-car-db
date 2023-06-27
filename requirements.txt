@@ -3,3 +3,5 @@
 pandas
 numpy
 cloudscraper
+extruct
+w3lib
