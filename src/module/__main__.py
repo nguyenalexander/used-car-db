@@ -28,6 +28,8 @@ def get_webdata():
     for page_counter in range(0, num_pages):
         print('================ Page ' + str(page_counter+1) + ' ================')
         url = 'https://www.autotrader.ca/cars/honda/civic/?rcp=' + str(num_cars_pp) + '&rcs=' + str(page_counter * num_cars_pp) + '&srt=12&prx=-1&loc=L8H%206T8&kwd=si&trans=Manual&hprc=True&wcp=True&sts=New-Used&inMarket=advancedSearch'
+
+        # extract the data from the current page and inserts the data into the car_specs_on_pg dictionary
         car_specs_on_pg[page_counter] = extract_metadata(url)
         time.sleep(60)
 
@@ -35,6 +37,7 @@ def get_webdata():
 
 
 def extract_metadata(url):
+    """ returns dictionary of dictionaries of each individual car and its specifications """
     all_car_specs = {}
     scraper = cloudscraper.create_scraper()
     info = scraper.get(url)
@@ -45,14 +48,17 @@ def extract_metadata(url):
                                syntaxes=['json-ld',
                                          'microdata',
                                          'opengraph'])
-    # loop through the metadata and grab
+
+    # loop through the metadata
     for key in metadata:
         if len(metadata[key]) > 0:
             for item in metadata[key]:
                 if item['@type'] == 'Product':
+                    # loop through all cars on the page
                     for car_item in item['offers']['offers']:
                         print(car_item['itemOffered'], ':', car_item['price'])
                         car_url = 'https://www.autotrader.ca' + car_item['url']
+                        # get the specs of the current car and append to the all_car_specs dictionary
                         car_specs = scrape_car_data(car_url)
                         all_car_specs[car_item['url']] = car_specs
 
@@ -60,6 +66,7 @@ def extract_metadata(url):
 
 
 def get_num_cars(url):
+    """ gets the number of cars returned from the search result """
     scraper = cloudscraper.create_scraper()
     info = scraper.get(url)
     base_url = get_base_url(info.text, info.url)
@@ -80,7 +87,7 @@ def get_num_cars(url):
 
 
 def scrape_car_data(url):
-    # url = "https://www.autotrader.ca/a/honda/civic%20coupe/calgary/alberta/5_58443310_20100115171356763/?showcpo=ShowCpo&ncse=no&ursrc=ts&pc=L8H%206T8&sprx=-1"
+    """ returns a dictionary of a car and its specifications """
     scraper = cloudscraper.create_scraper()
     info = scraper.get(url)
     # TODO: add wait and retry statements in case we get info.response = 403
@@ -94,7 +101,7 @@ def scrape_car_data(url):
         if car_tag.sourcepos == 0:
             break
 
-    # get string of the 5th tag group (need to fix - remove hardcode?)
+    # get string of the appropriate tag group
     script_tag_contents = car_tag.string
 
     # get the position where 'specifications' starts
